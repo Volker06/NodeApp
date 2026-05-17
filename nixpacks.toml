@@ -1,0 +1,23 @@
+[phases.setup]
+nixPkgs = ["php83", "php83Extensions.pdo", "php83Extensions.pdo_sqlite", "php83Extensions.sqlite3", "php83Extensions.mbstring", "php83Extensions.xml", "php83Extensions.curl", "php83Extensions.zip", "php83Extensions.gd", "php83Extensions.tokenizer", "php83Extensions.fileinfo", "php83Packages.composer", "nodejs_20"]
+
+[phases.install]
+cmds = [
+    "composer install --no-dev --optimize-autoloader",
+    "npm install --legacy-peer-deps",
+    "npm run build"
+]
+
+[phases.build]
+cmds = [
+    "cp -n .env.example .env || true",
+    "php artisan key:generate --force",
+    "php artisan migrate --force",
+    "php artisan storage:link || true",
+    "php artisan config:cache",
+    "php artisan route:cache",
+    "chmod -R 775 storage bootstrap/cache"
+]
+
+[start]
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
