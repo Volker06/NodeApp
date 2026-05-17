@@ -185,19 +185,19 @@ export default function Profile() {
                             <label className="block text-sm font-medium mb-1">Mật khẩu hiện tại</label>
                             <input type="password" className={inputClass}
                                 value={passwordForm.current_password}
-                                onChange={e => setPasswordForm({...passwordForm, current_password: e.target.value})} />
+                                onChange={e => setPasswordForm(prev => ({...prev, current_password: e.target.value}))} />
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Mật khẩu mới</label>
                             <input type="password" className={inputClass}
                                 value={passwordForm.password}
-                                onChange={e => setPasswordForm({...passwordForm, password: e.target.value})} />
+                                onChange={e => setPasswordForm(prev => ({...prev, password: e.target.value}))} />
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Xác nhận mật khẩu mới</label>
                             <input type="password" className={inputClass}
                                 value={passwordForm.password_confirmation}
-                                onChange={e => setPasswordForm({...passwordForm, password_confirmation: e.target.value})} />
+                                onChange={e => setPasswordForm(prev => ({...prev, password_confirmation: e.target.value}))} />
                         </div>
                         {errPassword && <p className="text-red-500 text-sm">{errPassword}</p>}
                         {msgPassword && <p className="text-green-500 text-sm">{msgPassword}</p>}
