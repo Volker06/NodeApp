@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { X, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,16 @@ export default function NotePasswordModal({ note, mode, onClose, onSuccess }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const passwordRef = useRef(null);
+
+    // Chỉ focus 1 lần khi modal mở, không re-focus khi gõ
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            passwordRef.current?.focus();
+        }, 50);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSubmit = async () => {
         setError(''); setLoading(true);
@@ -19,7 +29,10 @@ export default function NotePasswordModal({ note, mode, onClose, onSuccess }) {
                 await axios.post(`/api/notes/${note.id}/verify-password`, { password });
                 onSuccess();
             } else if (mode === 'set') {
-                if (password !== passwordConfirm) { setError('Mật khẩu xác nhận không khớp'); setLoading(false); return; }
+                if (password !== passwordConfirm) {
+                    setError('Mật khẩu xác nhận không khớp');
+                    setLoading(false); return;
+                }
                 await axios.post(`/api/notes/${note.id}/set-password`, { password, password_confirmation: passwordConfirm });
                 onSuccess();
             } else if (mode === 'remove') {
@@ -37,6 +50,9 @@ export default function NotePasswordModal({ note, mode, onClose, onSuccess }) {
         remove: { title: 'Tắt mật khẩu', icon: '🔓', btn: 'Tắt khóa', color: 'bg-rose-500 hover:bg-rose-600' },
     }[mode];
 
+    const inputClass = `w-full pl-9 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition
+        ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'border-slate-200 placeholder-slate-300'}`;
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
             <div className={`rounded-2xl shadow-2xl w-full sm:max-w-sm overflow-hidden
@@ -52,26 +68,36 @@ export default function NotePasswordModal({ note, mode, onClose, onSuccess }) {
                 </div>
 
                 <div className="p-5 space-y-3">
-                    {error && <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs px-3 py-2.5 rounded-xl">{error}</div>}
+                    {error && (
+                        <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs px-3 py-2.5 rounded-xl">{error}</div>
+                    )}
 
+                    {/* Ô mật khẩu */}
                     <div>
                         <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                             {mode === 'set' && note?.password ? 'Mật khẩu mới' : 'Mật khẩu'}
                         </label>
                         <div className="relative">
                             <Lock size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                            <input type={showPass ? 'text' : 'password'}
-                                className={`w-full pl-9 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition
-                                    ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'border-slate-200 placeholder-slate-300'}`}
-                                value={password} onChange={e => setPassword(e.target.value)} autoFocus
-                                onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
-                            <button type="button" onClick={() => setShowPass(!showPass)}
+                            <input
+                                ref={passwordRef}
+                                type={showPass ? 'text' : 'password'}
+                                className={inputClass}
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                            />
+                            <button
+                                type="button"
+                                onMouseDown={e => e.preventDefault()} // ngăn mất focus khi click
+                                onClick={() => setShowPass(v => !v)}
                                 className={`absolute right-3 top-1/2 -translate-y-1/2 transition ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
                                 {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
                         </div>
                     </div>
 
+                    {/* Ô xác nhận — chỉ hiện khi mode = set */}
                     {mode === 'set' && (
                         <div>
                             <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -79,11 +105,20 @@ export default function NotePasswordModal({ note, mode, onClose, onSuccess }) {
                             </label>
                             <div className="relative">
                                 <Lock size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                                <input type={showPass ? 'text' : 'password'}
-                                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition
-                                        ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'border-slate-200 placeholder-slate-300'}`}
-                                    value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
+                                <input
+                                    type={showConfirm ? 'text' : 'password'}
+                                    className={inputClass}
+                                    value={passwordConfirm}
+                                    onChange={e => setPasswordConfirm(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                />
+                                <button
+                                    type="button"
+                                    onMouseDown={e => e.preventDefault()} // ngăn mất focus khi click
+                                    onClick={() => setShowConfirm(v => !v)}
+                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
+                                    {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
                             </div>
                         </div>
                     )}
