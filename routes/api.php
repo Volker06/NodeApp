@@ -8,6 +8,7 @@ use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordResetController;
+use Illuminate\Support\Facades\Broadcast;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -81,4 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
     Route::post('/profile/change-password', [ProfileController::class, 'changePassword']);
     Route::put('/profile/preferences', [ProfileController::class, 'updatePreferences']);
+
+    // Broadcasting auth
+Route::post('/broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
+});
 });
