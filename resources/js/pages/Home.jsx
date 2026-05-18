@@ -31,16 +31,47 @@ export default function Home() {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [verifyMsg, setVerifyMsg] = useState('');
     const saveTimer = useRef(null);
+    const isRemoteUpdate = useRef(false);
     const navigate = useNavigate();
 
     useEffect(() => { fetchNotes(); fetchLabels(); }, []);
-
     useEffect(() => {
-        if (!showForm || !form.title) return;
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => saveNote(), 1000);
-        return () => clearTimeout(saveTimer.current);
-    }, [form]);
+    if (!editNote) return;
+
+    const channel = window.Echo.join(`note.${editNote.id}`)
+        .here((users) => {
+            console.log('Đang online:', users);
+        })
+        .joining((user) => {
+            console.log(user.name, 'vừa vào');
+        })
+        .leaving((user) => {
+            console.log(user.name, 'vừa ra');
+        })
+        .listen('.note.updated', (e) => {
+    if (e.editor_id !== user?.id) {
+        isRemoteUpdate.current = true;
+        setForm({ title: e.title, content: e.content });
+    }
+});
+
+    return () => {
+        window.Echo.leave(`note.${editNote.id}`);
+    };
+}, [editNote?.id]);
+
+    
+
+useEffect(() => {
+    if (!showForm || !form.title) return;
+    if (isRemoteUpdate.current) {
+        isRemoteUpdate.current = false;
+        return;
+    }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => saveNote(), 1000);
+    return () => clearTimeout(saveTimer.current);
+}, [form]);
 
     const fetchNotes = async () => {
         try {

@@ -38,15 +38,20 @@ class NoteController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $note = Note::where('id', $id)
-            ->where('user_id', $request->user()->id)
-            ->firstOrFail();
+{
+    $note = Note::where('id', $id)
+        ->where('user_id', $request->user()->id)
+        ->firstOrFail();
 
-        $note->update($request->only(['title', 'content', 'is_pinned', 'pinned_at']));
+    $note->update($request->only(['title', 'content', 'is_pinned', 'pinned_at']));
 
-        return response()->json($note->load(['labels', 'images']));
+    // Broadcast cho các user đang cùng xem note này
+    if ($request->has('title') || $request->has('content')) {
+        broadcast(new \App\Events\NoteUpdated($note, $request->user()->id))->toOthers();
     }
+
+    return response()->json($note->load(['labels', 'images']));
+}
 
     public function destroy(Request $request, $id)
     {
