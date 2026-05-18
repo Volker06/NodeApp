@@ -10,6 +10,8 @@ cmds = [
 
 [phases.build]
 cmds = [
+    "php artisan config:clear",
+    "php artisan route:clear",
     "cp -n .env.example .env || true",
     "php artisan key:generate --force",
     "php artisan migrate --force",
